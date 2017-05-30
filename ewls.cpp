@@ -1,3 +1,4 @@
+// g++ -o -O2 -std=c++11
 #include <bits/stdc++.h>
 #define memcle(a) memset(a, 0, sizeof(a))
 #define debug(x) cerr << #x << " = " << x << ' '
@@ -5,10 +6,12 @@
 using namespace std;
 
 typedef pair<int, int> PI;
-const int N = 2010;
-const int M = 200010;
+const int N = 4500;
+const int M = 1500010;
 const int inf = 0x7fffffff;
 
+char *inputPath, *outputPath;
+int utl;
 int n, m, en;
 int sb, jump;
 vector<int> adj[N], eid[N];
@@ -35,11 +38,12 @@ void read(int &x)
     for (; c >= '0' && c <= '9'; ) x = x * 10 + c - '0', c = getchar();
 }
 
-void reportTime()
+double reportTime()
 {
     clock_t nowtime = clock(); 
     double totaltime = double(nowtime - start) / CLOCKS_PER_SEC;
     deln(totaltime);
+    return totaltime;
 }
 
 class Edge
@@ -69,6 +73,7 @@ void link(int x, int y)
 
 void init()
 {
+    freopen(inputPath, "r", stdin);
     read(n); read(m);
     for (int i = 1; i <= m; i++)
     {
@@ -76,6 +81,7 @@ void init()
         read(x); read(y);
         link(x, y);
     }
+    fclose(stdin);
 }
 
 struct node
@@ -126,12 +132,26 @@ void Greedy(int *pick) // extends C and return the size of extend pick result
         ub = res;
         deln(step);
         deln(ub);
-        reportTime();
-        freopen("ewls.out", "w", stdout);
-        printf("%d\n", ub);
-        for (int i = 1; i <= n; i++) if (pick[i]) printf("%d ", i); puts("");
-        fclose(stdout);
-        //copy(pick + 1, pick + 1 + n, ansC + 1);
+        double ti = reportTime();
+        freopen(outputPath, "r", stdin);
+        char s[10]; double oldtime; int oldnum = 100000;
+        cin >> s >> s >> oldtime;
+        cin >> oldnum;
+        //deln(s);
+        //deln(oldtime);
+        //deln(oldnum);
+        fclose(stdin);
+        if (ub < oldnum || (ub <= oldnum && oldtime > ti))
+        {
+            cerr << "update !!!!!!!!!" << endl;
+            deln(inputPath);
+            deln(outputPath);
+            freopen(outputPath, "w", stdout);
+            printf("totaltime = %.3f\n", ti);
+            printf("%d\n", ub);
+            for (int i = 1; i <= n; i++) if (pick[i]) printf("%d ", i); puts("");
+            fclose(stdout);
+        }
     }
 }
 
@@ -314,12 +334,20 @@ void ewls()
     for (step = 0; step < maxSteps; step++)
     {
         int nowrate = int(step * 100.0 / maxSteps);
+        clock_t finish = clock();
+        double ti = double(finish - start) / CLOCKS_PER_SEC;
+        if (ti > utl) break;
         if (nowrate != rate) 
         {
             rate = nowrate;
             deln(rate);
             reportTime();
+            clock_t finish = clock();
+            double ti = double(finish - start) / CLOCKS_PER_SEC;
+            deln(ti);
+            deln(utl);
             deln(step);
+            if (ti > utl) break;
             deln(ub);
             deln(cost);
             deln(jump);
@@ -379,22 +407,26 @@ void ewls()
     }
 } 
 
-int main()
+int main(int argc, char *argv[])
 {
-    srand(time(0));
+    inputPath = argv[1];
+    deln(inputPath);
+    outputPath = argv[2];
+    deln(outputPath);
+    utl = atoi(argv[3]);
+    deln(utl);
+        
     start = clock();
-    freopen("ewls.in", "r", stdin);
-    //freopen("ewls.out", "w", stdout);
-
     init();
     delta = 1;
     maxSteps = 100000000;
     ewls();
 
+    /*
     printf("%d\n", ub);
     for (int i = 1; i <= n; i++) 
         if (ansC[i]) printf("%d ", i);
     puts("");
-
+*/
     return 0;
 }

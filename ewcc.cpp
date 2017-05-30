@@ -1,3 +1,4 @@
+//g++ -o -O2 -std=c++11
 #include <bits/stdc++.h>
 #define memcle(a) memset(a, 0, sizeof(a))
 #define debug(x) cerr << #x << " = " << x << ' '
@@ -5,13 +6,17 @@
 using namespace std;
 
 typedef pair<int, int> PI;
-const int N = 2010;
-const int M = 200010;
+const int N = 5010;
+const int M = 1500010;
 const int inf = 0x7fffffff;
 
-int n, m, en;
+char *inputPath, *outputPath;
+int utl;
+PI S[N * 2];
+int n, m, en, mm;
 int sb, jump;
-vector<int> adj[N], eid[N];
+//vector<int> adj[N], eid[N];
+int last[N], nex[M * 2], eid[M * 2], adj[M * 2];
 int lastuncover[M], weight[M], dscore[N];
 int C[N], ansC[N], tmpC[N];
 bool confChange[N];
@@ -36,11 +41,12 @@ void read(int &x)
     for (; c >= '0' && c <= '9'; ) x = x * 10 + c - '0', c = getchar();
 }
 
-void reportTime()
+double reportTime()
 {
     clock_t nowtime = clock(); 
     double totaltime = double(nowtime - start) / CLOCKS_PER_SEC;
     deln(totaltime);
+    return totaltime;
 }
 
 class Edge
@@ -67,11 +73,13 @@ void link(int x, int y)
     adj[y].push_back(x);
     eid[y].push_back(en);
     */
-    //adj[++mm] = y, next[mm];
+    adj[++mm] = y, eid[mm] = en, nex[mm] = last[x], last[x] = mm;
+    adj[++mm] = x, eid[mm] = en, nex[mm] = last[y], last[y] = mm;
 }
 
 void init()
 {
+    freopen(inputPath, "r", stdin);
     read(n); read(m);
     for (int i = 1; i <= m; i++)
     {
@@ -79,6 +87,7 @@ void init()
         read(x); read(y);
         link(x, y);
     }
+    fclose(stdin);
 }
 
 struct node
@@ -100,8 +109,8 @@ void Greedy(int *pick) // extends C and return the size of extend pick result
     for (int i = 1; i <= n; i++)
         if (!pick[i])
         {
-            for (int j = 0; j < adj[i].size(); j++)
-                if (!pick[adj[i][j]])
+            for (int p = last[i]; p; p = nex[p])
+                if (!pick[adj[p]])
                     deg[i]++;
             heap.push(node(i, deg[i]));
         } else res++;
@@ -115,9 +124,9 @@ void Greedy(int *pick) // extends C and return the size of extend pick result
         if (deg[x] != dg || pick[x]) continue;
         pick[x] = 1;
         res++;
-        for (int i = 0; i < adj[x].size(); i++)
+        for (int p = last[x]; p; p = nex[p])
         {
-            int y = adj[x][i];
+            int y = adj[p];
             if (pick[y]) continue;
             deg[y]--;
             heap.push(node(y, deg[y]));
@@ -129,16 +138,30 @@ void Greedy(int *pick) // extends C and return the size of extend pick result
         ub = res;
         deln(step);
         deln(ub);
-        reportTime();
-        freopen("ewcc.out", "w", stdout);
-        clock_t finish = clock();
-        printf("totaltime = %.3f\n", double(finish - start) / CLOCKS_PER_SEC);
-        printf("%d\n", ub);
-        for (int i = 1; i <= n; i++) if (pick[i]) printf("%d ", i); puts("");
-        fclose(stdout);
-        //copy(pick + 1, pick + 1 + n, ansC + 1);
-    }
-}
+        double ti = reportTime();
+        char s[10]; double oldtime; int oldnum = 100000;
+        try
+        {
+            freopen(outputPath, "r", stdin);
+            cin >> s >> s >> oldtime;
+            cin >> oldnum;
+            fclose(stdin);
+        } catch (...)
+        {
+
+        }
+        if (ub < oldnum || (ub <= oldnum && oldtime > ti))
+        {
+            deln(inputPath);
+            deln(outputPath);
+            cerr << "update !!!!!!!!!!!!" << endl;
+            freopen(outputPath, "w", stdout);
+            printf("totaltime = %.3f\n", ti);
+            printf("%d\n", ub);
+            for (int i = 1; i <= n; i++) if (pick[i]) printf("%d ", i); puts("");
+            fclose(stdout);
+        }
+    }}
 
 int ra(int x) {return ((rand() << 15) + (rand())) % x;}
 
@@ -148,10 +171,10 @@ void remove(int u)
         cerr << "remove a vertex not in C!!" << endl;
     dscore[u] = 0;
     confChange[u] = 0;
-    for (int i = 0; i < adj[u].size(); i++)
+    for (int p = last[u]; p; p = nex[p])
     {
-        int v = adj[u][i];
-        int cur = eid[u][i];
+        int v = adj[p];
+        int cur = eid[p];
         if (!C[v])
         {
             confChange[v] = 1;
@@ -175,10 +198,10 @@ void add(int u)
     if (C[u]) cerr << "add a vertex already in C!!" << endl;
     dscore[u] = 0;
     confChange[u] = 0;
-    for (int i = 0; i < adj[u].size(); i++) 
+    for (int p = last[u]; p; p = nex[p])
     {
-        int v = adj[u][i];
-        int cur = eid[u][i];
+        int v = adj[p];
+        int cur = eid[p];
         if (!C[v])
         {
             confChange[v] = 1;
@@ -215,14 +238,15 @@ void remove_some_vertices()
         remove(tmp[i].second);
 }
 
-void append_new_pair(int v, vector<PI> &S)
+void append_new_pair(int v, PI *S, int &sn)
 {
-    for (int i = 0; i < adj[v].size(); i++)
+    for (int p = last[v]; p; p = nex[p])
     {
-        int u = adj[v][i];
-        int cur = eid[v][i];
+        int u = adj[p];
+        int cur = eid[p];
         if (C[u] && dscore[v] + dscore[u] + weight[cur] > 0 && (u != lastadd || v != lastremove) && (confChange[v] == 1)) 
-            S.push_back(make_pair(u, v));
+            S[sn++] = make_pair(u, v);
+            //S.push_back(make_pair(u, v));
     }
     //if (S.size() != 0) return;
     /*
@@ -233,7 +257,7 @@ void append_new_pair(int v, vector<PI> &S)
     */
     for (int i = 1; i <= n; i++)
         if (C[i] && (v != lastremove || i != lastadd) && dscore[i] + dscore[v] > 0 && confChange[v] == 1)
-            S.push_back(make_pair(i, v));
+            S[sn++] = make_pair(i, v);
 }
 
 PI ChooseExchangePair() // return the label of edge
@@ -250,14 +274,14 @@ PI ChooseExchangePair() // return the label of edge
     }
     if (it == L.end()) return make_pair(0, 0);
 
-    vector<PI> S;
+    int sn = 0;
     int cur = it -> id;
-    append_new_pair(edge[cur].x, S);
-    append_new_pair(edge[cur].y, S);
-    if (S.size() > 0) 
+    append_new_pair(edge[cur].x, S, sn);
+    append_new_pair(edge[cur].y, S, sn);
+    if (sn > 0) 
     {
         ++jump;
-        return S[ra(S.size())];
+        return S[ra(sn)];
     }
 
     it = UL.begin(); 
@@ -266,10 +290,12 @@ PI ChooseExchangePair() // return the label of edge
         if (lastuncover[it -> id] != it -> last) it = UL.erase(it); else 
         {
             int cur = it -> id;              
-            append_new_pair(edge[cur].x, S);
-            append_new_pair(edge[cur].y, S);
+            sn = 0;
+            append_new_pair(edge[cur].x, S, sn);
+            append_new_pair(edge[cur].y, S, sn);
             it = UL.erase(it);
-            if (S.size() > 0) return S[ra(S.size())];
+            //if (S.size() > 0) return S[ra(S.size())];
+            if (sn > 0) return S[ra(sn)];
         }
     }
 
@@ -324,12 +350,19 @@ void ewls()
     for (step = 0; step < maxSteps; step++)
     {
         int nowrate = int(step * 100.0 / maxSteps);
+        clock_t finish = clock();
+        double ti = double(finish - start) / CLOCKS_PER_SEC;
+        if (ti > utl)  break;
+            
         if (nowrate != rate) 
         {
             rate = nowrate;
             deln(rate);
             reportTime();
             deln(step);
+            clock_t finish = clock();
+            double ti = double(finish - start) / CLOCKS_PER_SEC;
+            if (ti > utl)  break;
             deln(ub);
             deln(cost);
             deln(jump);
@@ -391,22 +424,26 @@ void ewls()
     }
 } 
 
-int main()
+int main(int argc, char *argv[])
 {
+    inputPath = argv[1];
+    deln(inputPath);
+    outputPath = argv[2];
+    deln(outputPath);
+    utl = atoi(argv[3]);
+    deln(utl);
     srand(time(0));
     start = clock();
-    freopen("ewls.in", "r", stdin);
-    //freopen("ewls.out", "w", stdout);
 
     init();
     delta = 1;
     maxSteps = 100000000;
     ewls();
-
+/*
     printf("%d\n", ub);
     for (int i = 1; i <= n; i++) 
         if (ansC[i]) printf("%d ", i);
     puts("");
-
+*/
     return 0;
 }
