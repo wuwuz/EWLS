@@ -418,7 +418,7 @@ int main(int argc, char *argv[])
         
     start = clock();
     init();
-    delta = 1;
+    delta = 2;
     maxSteps = 100000000;
     ewls();
 
